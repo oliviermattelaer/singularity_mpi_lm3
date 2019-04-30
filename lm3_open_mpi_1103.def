@@ -1,0 +1,49 @@
+# Copyright (c) 2015-2017, Gregory M. Kurtzer. All rights reserved.
+# 
+# "Singularity" Copyright (c) 2016, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of any
+# required approvals from the U.S. Dept. of Energy).  All rights reserved.
+
+
+BootStrap: yum
+OSVersion: 7
+MirrorURL: http://mirror.centos.org/centos-%{OSVERSION}/%{OSVERSION}/os/$basearch/
+Include: yum
+
+# If you want the updates (available at the bootstrap date) to be installed
+# inside the container during the bootstrap instead of the General Availability
+# point release (7.x) then uncomment the following line
+#UpdateURL: http://mirror.centos.org/centos-%{OSVERSION}/%{OSVERSION}/updates/$basearch/
+
+
+%runscript
+    echo "This is what happens when you run the container..."
+
+%files
+    slurm-libpmi-17.11.6-1.el7.centos.x86_64.rpm /opt/slurm-libpmi-17.11.6-1.el7.centos.x86_64.rpm
+    openmpi-1.10.3.tar.gz /opt/openmpi-1.10.3.tar.gz
+    slurm-devel-17.11.6-1.el7.centos.x86_64.rpm /opt/slurm-devel-17.11.6-1.el7.centos.x86_64.rpm
+    test-mpi.c /opt/test-mpi.c
+
+%post
+    echo "Hello from inside the container"
+    yum install -y libhfi1 libpsm2 libpciaccess libpsm2-devel
+    yum install -y which bzip2 gcc gcc-c++ kernel-devel make
+    ls
+    pwd
+    cp /opt/slurm-libpmi-17.11.6-1.el7.centos.x86_64.rpm .
+    cp /opt/openmpi-1.10.3.tar.gz .
+    cp /opt/slurm-devel-17.11.6-1.el7.centos.x86_64.rpm .
+    ls
+    rpm -ivh  --nodeps slurm-libpmi-17.11.6-1.el7.centos.x86_64.rpm
+    rpm -ivh  --nodeps slurm-devel-17.11.6-1.el7.centos.x86_64.rpm
+    tar xzf openmpi-1.10.3.tar.gz
+    cd openmpi-1.10.3
+    ./configure --prefix=/usr/local --with-psm2 --with-pmi
+    make -j
+    make install
+    mpicc examples/ring_c.c -o ring	
+    cp ./ring /usr/bin/	     
+    cp /opt/test-mpi.c .
+    mpicc -o /usr/bin/test-mpi test-mpi.c
+
